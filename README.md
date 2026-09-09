@@ -42,6 +42,17 @@ message stays in the visible conversation; **New chat** clears it. Questions are
 retrieved and explained independently, and conversation history is held only in
 the page until it is refreshed. Stop either server with Ctrl+C in its terminal.
 
+### Blocked examples
+
+The **Broken link · demo** and **Expired offer · demo** buttons run deterministic
+simulation fixtures without a model call or an external destination request.
+Both show an explanation, an **Action withheld** state, and expandable evidence;
+neither returns an action URL. The broken-link case models an HTTP 404. The
+expired-offer case models a still-reachable page whose promotion has ended.
+Expiry validation is a demonstrated policy, not a feature of the live retriever.
+The TELUS and Sun Life examples continue to use live checks and may be blocked
+by their publishers' bot protection.
+
 ### What the cards show
 
 The Turo, Mercedes-Benz, and TELUS preview copy and photos reproduce supplied

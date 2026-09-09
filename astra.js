@@ -155,6 +155,14 @@ body.chatting .composer-wrap:before{inset:-24px -12px -32px}
 @media(max-width:620px){.presets,.presets.open{gap:5px;margin-top:10px}.presets b{font-size:11px;padding:5px 9px}.thread,.thread:has(.turo-card){padding-bottom:200px}}
 
 .telus-photo{background-image:url('/assets/telus-reference.png');background-size:253.093% 201.031%;background-position:85.69% 52.381%}
+
+.blocked-card{margin:28px 0 16px;border:1px solid #eadcda;border-radius:18px;padding:28px 30px;background:#fcf9f8}
+.blocked-eyebrow{font-size:11px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:#8b6660}
+.blocked-card h3{font-size:24px;line-height:1.3;letter-spacing:-.4px;margin:14px 0 12px}
+.blocked-card p{font-size:15px;color:#6b6260;margin:0 0 20px}
+.blocked-status{display:inline-flex;gap:8px;align-items:center;padding:7px 12px;border-radius:20px;color:#97483f;background:#f5e6e3;font-size:12px;font-weight:600}
+.blocked-status svg{width:14px;height:14px}.blocked-evidence{margin-top:20px;border-top:1px solid #eadcda;padding-top:16px;font-size:13px;color:#706663}
+.blocked-evidence summary{cursor:pointer}.blocked-evidence pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}
 [hidden]{display:none!important}
 </style></head><body>
 <header class="chat-header"><div class="chat-brand">ChatGPT <svg viewBox="0 0 12 12" fill="none" stroke="currentColor"><path d="m3 4.5 3 3 3-3"/></svg><span class="demo-label">Senso demo</span></div><button class="new-chat" id="new-chat">New chat</button></header>
@@ -163,7 +171,7 @@ body.chatting .composer-wrap:before{inset:-24px -12px -32px}
 <div class="composer-wrap">
 <form class="askbar" id="f"><button type="button" class="examples-toggle" aria-label="Show example questions" aria-expanded="false">+</button><input id="q" aria-label="Message" placeholder="Ask ChatGPT" autocomplete="off"><button id="go" aria-label="Send message" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button></form>
 <div class="presets">
-<b role="button" tabindex="0" data-q="What makes documentation readable by AI agents?">AI documentation</b><b role="button" tabindex="0" data-q="what problem does senso ai solve">Senso</b><b role="button" tabindex="0" data-q="best way to rent an SUV in Los Angeles">Turo</b><b role="button" tabindex="0" data-q="best luxury suv from mercedes">Mercedes-Benz</b><b role="button" tabindex="0" data-q="TELUS PureFibre internet plans in Canada">TELUS</b><b role="button" tabindex="0" data-q="best term life insurance in canada sun life">Sun Life</b>
+<b role="button" tabindex="0" data-q="What makes documentation readable by AI agents?">AI documentation</b><b role="button" tabindex="0" data-q="what problem does senso ai solve">Senso</b><b role="button" tabindex="0" data-q="best way to rent an SUV in Los Angeles">Turo</b><b role="button" tabindex="0" data-q="best luxury suv from mercedes">Mercedes-Benz</b><b role="button" tabindex="0" data-q="TELUS PureFibre internet plans in Canada">TELUS</b><b role="button" tabindex="0" data-q="best term life insurance in canada sun life">Sun Life</b><b role="button" tabindex="0" data-demo="broken-link" data-q="What happens when a booking link is broken?">Broken link · demo</b><b role="button" tabindex="0" data-demo="expired-offer" data-q="Can I still claim an offer after it expires?">Expired offer · demo</b>
 </div>
 <button type="button" class="welcome-help">What can you do?</button>
 </div><footer class="chat-footer">Senso demo · AI can make mistakes. Check sources and offer details.</footer>
@@ -205,7 +213,11 @@ function telusBox(p){
   o+='<details class="turo-details"><summary>View live verification details</summary><pre class="ev">'+esc(JSON.stringify(p.action_withheld||a||{},null,2))+'</pre></details><div class="ev" id="ev" hidden></div>';
   return o;
 }
+function blockedBox(p){
+  return '<section class="blocked-card" aria-label="Blocked action demonstration"><div class="blocked-eyebrow">Simulated scenario · '+esc(p.scenario_label)+'</div><h3>'+esc(p.card_title)+'</h3><p>'+esc(p.action_withheld.say_this)+'</p><span class="blocked-status">'+CROSS+'Action withheld</span><details class="blocked-evidence"><summary>Why this action was blocked</summary><pre>'+esc(JSON.stringify(p.evidence,null,2))+'</pre></details></section><div class="note">Demonstration fixture. No live brand or destination was tested, and no action URL is returned.</div>';
+}
 function bigBox(p,m){
+  if(p.is_simulation) return blockedBox(p);
   if(p.source && /telus\.com$/.test(p.source.publisher||'')) return telusBox(p);
   if(p.source && /mercedes-benz\.ca$/.test(p.source.publisher||'')) return mercedesBox(p);
   if(p.source && /(^|\.)turo\.com$/.test(p.source.publisher||'')) return turoBox(p);
@@ -248,6 +260,7 @@ function render(q,p,m){
   var src=p.source||{},dom=src.publisher||'';
   var prose=(m&&m.explanation)||p.answer||'';
   var o='<div class="turn"><div class="bub">'+esc(q)+'</div></div><div class="ans">';
+  if(p.is_simulation) return o+'<p>'+esc(prose)+'</p>'+blockedBox(p)+'</div>';
   o+='<p>'+esc(prose)+'<span class="chip" data-ev="'+esc(JSON.stringify({slot:'Citation',rule:'this answer comes from a published page fetched over ordinary public HTTP with no key',observed:src.url}))+'">'+LNK+esc(dom)+'</span></p>';
   o+=shortlist(p);
   o+=bigBox(p,m);
@@ -263,10 +276,11 @@ document.addEventListener('click',function(e){
 });
 document.addEventListener('click',function(e){
   var t=e.target.closest('.presets b'); if(!t) return;
+  if(busy) return; pendingDemo=t.getAttribute('data-demo')||null;
   $('#q').value=t.getAttribute('data-q'); $('#f').dispatchEvent(new Event('submit',{cancelable:true}));
 });
 document.querySelectorAll('.presets b').forEach(function(b){b.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();b.click()}})});
-var busy=false;
+var busy=false, pendingDemo=null;
 function toggleExamples(){var open=$('.presets').classList.toggle('open');$('.examples-toggle').setAttribute('aria-expanded',String(open));}
 $('.examples-toggle').addEventListener('click',toggleExamples);
 $('.welcome-help').addEventListener('click',toggleExamples);
@@ -275,18 +289,19 @@ $('#new-chat').addEventListener('click',function(){if(busy)return;$('#out').inne
 $('#f').addEventListener('submit',async function(e){
   e.preventDefault();
   var question=$('#q').value.trim(); if(!question || busy) return;
+  var demoCase=pendingDemo; pendingDemo=null;
   busy=true; document.body.classList.add('chatting'); $('.presets').classList.remove('open'); $('.examples-toggle').setAttribute('aria-expanded','false');
   var out=document.createElement('section'); out.className='message'; $('#out').appendChild(out); $('#q').value=''; $('#go').disabled=true;
   out.scrollIntoView({behavior:'smooth',block:'start'});
   var head='<div class="turn"><div class="bub">'+esc(question)+'</div></div>';
   out.innerHTML=head+'<div class="prog"><span class="sp2"></span>Searching</div>';
   try{
-    var r=await fetch('/api/retrieve',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:question})});
+    var r=await fetch(demoCase?'/api/demo/blocked':'/api/retrieve',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:question,demo_case:demoCase})});
     var p=await r.json();
     if(p.match!=='ok'){ out.innerHTML=head+'<div class="ans"><p>No published page answers this closely enough. Best score '+esc(p.best_score!=null?p.best_score:p.score)+' against the relevance floor, so nothing was returned rather than something confidently wrong.</p></div>'; return; }
     out.innerHTML=head+'<div class="prog"><span class="sp2"></span>Reading the source and checking its next step</div>';
     var m=null;
-    try{ var r2=await fetch('/api/explain',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:question,payload:p})}); var mm=await r2.json(); if(!mm.error) m=mm; }catch(_){}
+    if(!p.is_simulation) try{ var r2=await fetch('/api/explain',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:question,payload:p})}); var mm=await r2.json(); if(!mm.error) m=mm; }catch(_){}
     out.innerHTML=render(question,p,m);
   }catch(err){ out.innerHTML=head+'<div class="ans"><p>Request failed. '+esc(err.message)+'</p></div>'; }
   finally{ busy=false; $('#go').disabled=!$('#q').value.trim(); $('#q').focus(); }
@@ -420,6 +435,31 @@ http.createServer(async (req, res) => {
 
   if (url.pathname === '/api/config') {
     return j(res, 200, { model: MODEL, model_key_present: !!OPENAI_KEY, cta_base: CTA_BASE, example: EXAMPLE_Q });
+  }
+
+  if (url.pathname === '/api/demo/blocked' && req.method === 'POST') {
+    try {
+      const { demo_case } = await readBody(req);
+      const scenarios = {
+        'broken-link': {
+          scenario_label: 'Broken destination',
+          card_title: 'This booking link no longer works.',
+          answer: 'In this example, the source is available but its booking link returns HTTP 404. The agent withholds that action and explains the failure instead of sending you to a dead page.',
+          action_withheld: { status: 'dead', say_this: 'The booking destination returned HTTP 404 in this simulated check. The booking action has been removed. No replacement link was invented.' },
+          evidence: { simulated: true, source_available: true, destination_http_status: 404, result: 'action_withheld', action_url_returned: false }
+        },
+        'expired-offer': {
+          scenario_label: 'Expired offer',
+          card_title: 'This offer has ended.',
+          answer: 'In this example, the offer page still responds, but the promotion has expired. The demo withholds the claim-offer action: a working link alone does not establish that an offer is still valid.',
+          action_withheld: { status: 'expired', say_this: 'The simulated offer ended before the check time. The claim-offer action has been removed, and a current price or replacement offer is not assumed.' },
+          evidence: { simulated: true, destination_http_status: 200, offer_valid_until: '2026-09-08T23:59:59Z', checked_at: '2026-09-09T12:00:00Z', result: 'action_withheld', action_url_returned: false, scope: 'Expiry policy demonstration only; expiry validation is not implemented in the live retriever.' }
+        }
+      };
+      const scenario = scenarios[demo_case];
+      if (!scenario) return j(res, 400, { error: 'Unknown blocked demo scenario' });
+      return j(res, 200, { match: 'ok', is_simulation: true, action: null, source: {}, ...scenario });
+    } catch (e) { return j(res, 400, { error: 'Invalid demo request' }); }
   }
 
   if (url.pathname === '/api/retrieve' && req.method === 'POST') {
