@@ -4,6 +4,57 @@ Give your agent a verified answer, the URL to cite for it, and a real call to ac
 
 **No API key. No account. No install.** It reads Senso's public published network.
 
+## Run the chat demo
+
+The demo has a ChatGPT-style welcome screen and conversation layout, a bottom
+composer, and example buttons for Senso, Turo, Mercedes-Benz, TELUS, and Sun Life.
+Turo, Mercedes-Benz, and TELUS use application-reference card designs.
+
+Use **Node.js 22 or newer** for the commands below. No npm install is required.
+
+```sh
+git clone https://github.com/saroopbharwani/senso-mcp.git
+cd senso-mcp
+cp .env.demo.example .env.demo
+```
+
+Edit `.env.demo` with your own OpenAI key, or your Azure Responses URL and key.
+For Azure, use the full Responses endpoint including any required `api-version`
+query parameter, and set `ASTRA_MODEL` to your deployment name. Credentials stay
+in the server process; the browser never receives them. `.env.demo` is ignored
+by Git. Without a model key, retrieval and cards still work, with source text
+instead of an Astra explanation.
+
+Start the keyless consumer in one terminal:
+
+```sh
+SENSO_MIN_SCORE=0.7 node senso-mcp.js --http 8899
+```
+
+Start the chat interface in another terminal, from the same directory:
+
+```sh
+node --env-file=.env.demo astra.js
+```
+
+Open **http://localhost:8800** and select an example or enter a question. Each
+message stays in the visible conversation; **New chat** clears it. Questions are
+retrieved and explained independently, and conversation history is held only in
+the page until it is refreshed. Stop either server with Ctrl+C in its terminal.
+
+### What the cards show
+
+The Turo, Mercedes-Benz, and TELUS preview copy and photos reproduce supplied
+application screenshots; they are not proof of current pricing or offer terms.
+Live verification details remain available below each card. The Mercedes button
+currently opens the checked Canada site, not a confirmed GLA offer page. TELUS
+only enables the PureFibre button when a checked internet/PureFibre destination
+is available. Refused or unverified destinations leave the preview inactive.
+
+The reference images in `assets/` are used for these demo previews. The interface
+is a Senso demo, not the ChatGPT product. This repository update does not deploy
+the chat UI; the existing hosted keyless MCP endpoint is a separate service.
+
 ## Add it
 
 Claude Code:
